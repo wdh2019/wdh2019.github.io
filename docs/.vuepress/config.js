@@ -1,17 +1,28 @@
 module.exports = {
-    basd: '/',
-    title: '',
+    base: '/',
+    title: 'wdh2019 github page',
     description: 'Github page built by Vuepress',
     themeConfig: {
-        // github仓库地址
-        repo: 'https://github.com/wdh2019/wdh2019.github.io',
         nav: [
-            {text: 'Home', link: '/'},
-            {text: 'FirstBlog', link: '/blogs/FirstBlog.md'}
+            {text: '首页', link: '/'},
+            {text: '博客', link: '/blogs/'},
+            {text: '笔记', link: '/notes/'}
         ],
-        sidebar: [
-            ['/', '首页'],
-            ['/blogs/FirstBlog.md', '我的第一篇博客']
-        ]
+        sidebar: {
+            '/blogs/': [
+                {
+                    title: '博客',
+                    children: [
+                        ['FirstBlog', 'FirstBlog']// ['xxx(表示xxx.md)', '你要显示的文章名']
+                    ]
+                }
+            ],
+            '/notes/': [
+                {
+                    title: '笔记',
+                    children: ['']
+                }
+            ]
+        }
     }
 }
