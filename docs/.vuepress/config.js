@@ -12,17 +12,22 @@ module.exports = {
             '/blogs/': [
                 {
                     title: '博客',
+                    sidebarDepth: 3,
                     children: [
-                        ['FirstBlog', 'FirstBlog']// ['xxx(表示xxx.md)', '你要显示的文章名']
+                        ['第一篇博客', '第一篇博客']// ['xxx(表示xxx.md)', '你要显示的文章名']
                     ]
                 }
             ],
             '/notes/': [
                 {
                     title: '笔记',
-                    children: ['']
+                    sidebarDepth: 3,
+                    children: [
+                        ['frontend/前端笔记.md', '前端笔记'],
+                        ['design-pattern/设计模式.md', '设计模式']
+                    ]
                 }
-            ]
+            ],
         }
     }
 }
