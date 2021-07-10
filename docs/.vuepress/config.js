@@ -20,12 +20,17 @@ module.exports = {
             ],
             '/notes/': [
                 {
-                    title: '笔记',
+                    title: '前端笔记',
                     sidebarDepth: 3,
                     children: [
-                        ['frontend/前端笔记.md', '前端笔记'],
-                        ['design-pattern/设计模式.md', '设计模式']
+                        'frontend/internet.md',
+                        'frontend/browser.md'
                     ]
+                },
+                {
+                    title: '设计模式',
+                    sidebarDepth: 2,
+                    children: ['design-pattern/设计模式.md']
                 }
             ],
         }
