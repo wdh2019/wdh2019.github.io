@@ -12,9 +12,10 @@ module.exports = {
             '/blogs/': [
                 {
                     title: '博客',
-                    sidebarDepth: 3,
+                    sidebarDepth: 2,
                     children: [
-                        ['第一篇博客', '第一篇博客']// ['xxx(表示xxx.md)', '你要显示的文章名']
+                        ['第一篇博客.md', '第一篇博客'],// ['xxx(表示xxx.md)', '你要显示的文章名']
+                        'Vue2.x 响应式.md'
                     ]
                 }
             ],
@@ -24,7 +25,12 @@ module.exports = {
                     sidebarDepth: 3,
                     children: [
                         'frontend/internet.md',
-                        'frontend/browser.md'
+                        'frontend/browser.md',
+                        'frontend/html.md',
+                        'frontend/css.md',
+                        ['frontend/javascript.md', '五、Javascript'],
+                        'frontend/vue.md',
+                        'frontend/webpack.md'
                     ]
                 },
                 {
