@@ -764,7 +764,9 @@ variable = boolean_expression ? true_value : false_value;
 
 
 
-### `for-in`语句
+## 语句
+
+#### `for-in`语句
 
 用于枚举对象中的<u>非符号键属性</u>
 
@@ -778,9 +780,7 @@ for (const propName in window) {
 
 
 
-
-
-### `for-of`语句
+#### `for-of`语句
 
 用于遍历<u>可迭代对象</u>的元素
 
@@ -794,9 +794,7 @@ for (const el of [2,4,6,8]) {
 
 
 
-
-
-### `with`语句
+#### `with`语句
 
 将代码作用域设置为特定的对象
 
@@ -867,6 +865,8 @@ with语句用于连接location对象。在语句内部，每个变量首先会�
 - 如果在局部上下文中找到该标识符，则搜索停止，变量确定；如果没有找到变量名，则继续沿作用域链搜索。
 
 - 注意：作用域链中的对象也有一个原型链，因此搜索可能涉及每个对象的原型链。
+
+
 
 
 
@@ -1086,6 +1086,8 @@ alert(sum); // 15
 
 
 
+
+
 ## Map（映射）
 
 #### Map
@@ -1149,6 +1151,8 @@ alert(sum); // 15
 - 键不属于正式的引用，<u>不会阻止垃圾回收</u>。即如果外部没有对键的引用，该键就会在代码执行完毕后被垃圾收集。
 
 - 没有迭代器，不能直接迭代。
+
+
 
 
 
@@ -1610,6 +1614,8 @@ console.log(personAge); // 27
 - **嵌套解构**：可以使用嵌套解构来匹配嵌套的属性。
 - **部分解构**：解构赋值是顺序化操作。当赋值出错，会抛出错误并中止。
 - **参数上下文匹配**：在函数参数列表中也可以进行解构赋值。
+
+
 
 
 
@@ -2982,7 +2988,7 @@ p.then(() => setTimeout(console.log, 0, 'completed'));
 
 
 
-#### async/await（异步函数）
+### async/await（异步函数）
 
 ES8新增，让我们能以同步代码的形式编写异步代码。
 
@@ -3585,6 +3591,18 @@ redirect
 
 4. 加载Blob文件
 
+   响应对象上暴露了`blob()`方法，返回一个promise，解决为一个Blob的实例。可以将该实例传入`URL.createObjectUrl()`：
+
+   ```javascript
+   const imageElement = document.querySelector('img');
+   
+   fetch('my-image.png')
+   	.then(res => res.blob())
+   	.then(blob => {
+   		imageElement.src = URL.createObjectURL(blob);
+   	});
+   ```
+
 5. 发送跨域请求
 
    从不同的源请求资源，需要服务器响应包含 **CORS** 头部（'Access-Control-Allow-Origin' header）才能保证浏览器收到响应，否则请求会失败并抛出错误。
@@ -3957,7 +3975,7 @@ request.onsuccess = (event) => alert(event.target.result.firstName);
 
 
 
-# DOM
+## DOM
 
 **文档对象模型**（Document Object Model）是一个应用编程接口（API），用于在HTML中使用扩展的XML。DOM将整个页面抽象为一组分层节点。HTML或XML页面的每个组成部分都是一种节点，包含不同的数据。
 
@@ -3969,7 +3987,7 @@ DOM通过创建表示文档的树，让开发者可以随心所欲地控制网�
 
 
 
-# BOM
+## BOM
 
 IE3和Netscape Navigator 3 提供了**浏览器对象模型**（BOM） API，用于支持访问和操作浏览器的窗口。使用BOM，开发者可以操控浏览器显示页面之外的部分。而BOM真正独一无二的地方，当然也是问题最多的地方，就是它是唯一一个没有相关标准的JavaScript实现。HTML5改变了这一局面，这个版本的HTML以正式规范的形式涵盖了尽可能多的BOM特性。由于HTML5的出现，之前很多与BOM有关的问题都迎刃而解了。
 
@@ -3991,6 +4009,8 @@ IE3和Netscape Navigator 3 提供了**浏览器对象模型**（BOM） API，用
 
 
 # ES标准
+
+ES6 - ES12
 
 
 
@@ -4748,7 +4768,7 @@ const money = 1000000000;
 
 
 
-# 重点概念
+## 重点概念
 
 ### this关键字
 
