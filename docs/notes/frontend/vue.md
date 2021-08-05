@@ -1,4 +1,4 @@
-# VUE
+# Vue
 
 
 
@@ -41,15 +41,85 @@
 
 
 
-## vue双向绑定
+## vue 双向数据绑定
 
-vue 双向数据绑定是通过 **数据劫持** 结合 **发布订阅模式**的方式来实现的， 也就是说数据和视图同步，数据发生变化，视图跟着变化，视图变化，数据也随之发生改变；
+`v-model`是 vue 中最常用的用于双向数据绑定的指令。
 
-数据劫持的核心方法就是使用`Object.defineProperty`把属性转化成`getter/setter`
+双向数据绑定指的是视图和数据的双向绑定：视图的更新触发所需数据的改变，而数据的改变触发依赖它的视图的重新渲染。
 
-**view更新data**其实可以通过事件监听即可，比如input标签监听 'input' 事件就可以实现了。所以我们着重来分析下，当数据改变，如何更新视图的。
+### MVVM
 
-关键点在于**data如何更新view**，
+在更抽象的层面上，可以用 MVVM 模型来描述双向数据绑定：
+
+![mvvm](../img/vue/mvvm.jpeg)
+
+在 MVVM 模型中，视图（View）代表了 DOM 元素的集合；模型（Model）代表了 JS 对象的集合（这些 JS 对象也是我们数据的来源）；而 视图模型（ViewModel）在 Vue 框架中，代表了 Vue 框架的一些中间处理逻辑。
+
+1. 从视图到模型，是通过 DOM Listeners，通俗地说，是依靠 DOM 事件。 
+
+   在 DOM 元素上绑定事件处理函数。当用户操作 DOM 元素并改变视图（比如 改变了输入框的输入内容），会触发事件，JS 会调用事件处理函数。
+
+   在事件处理函数中，可以根据用户的操作改变模型中所需的 JS 对象（数据）。
+
+2. 从模型到视图，是通过 Data Bindings，大致上说，这条线就是 【响应式数据】 干的活了。
+
+   DOM 元素将某些属性与模型中的某个 JS 对象（数据）进行绑定，由于这些数据都是 【响应式】的，因此当数据改变时，DOM元素的属性也会响应改变。
+
+   **如此，DOM 元素是不是就【依赖】于某个数据了。可以有很多不同的 DOM 元素都依赖于同一个数据（或者其属性），因此数据要进行【依赖收集】(depend)。而当数据改变时，它要通知（notify）依赖它的所有依赖项进行重新渲染。**
+
+   这就是响应式的大致思路了。
+
+
+
+可以用Vue的其他指令实现一个简单的数据双向绑定例子，供参考：
+
+```javascript
+<input v-bind:value = "value" @input="changeValue">
+  
+  
+export default {
+	data(){
+    return {
+      value: ""
+    }
+  },
+  methods:{
+    changeValue(event){
+      this.value = event.target.value
+    }
+  }
+}
+```
+
+- `input`事件和`changeValue`事件处理函数，作为视图到模型的桥梁
+- 通过`v-bind`将输入框的`value`属性和Vue实例的`value`数据绑定，作为模型到视图的桥梁。（注意，在Vue实例的data选项定义的数据都会被自动转换为【响应式】）
+
+
+
+
+
+### Vue2 响应式
+
+<a href="https://cn.vuejs.org/v2/guide/reactivity.html">官网链接</a>
+
+vue2 响应式原理是通过 **数据劫持** 结合 **发布订阅模式**的方式来实现的。
+
+数据劫持的核心方法就是使用`Object.defineProperty`把数据的每个属性添加`getter/setter`。
+
+- DOM 元素将属性绑定数据时，必然会先获取一次数据的值作为属性的初始值——这样就会触发数据的`getter`。别忘了还要【收集依赖】。（”你的属性是依赖我的？好的，我记一下。待会我变了会通知你“）
+- 而在数据发生改变时，会触发其`setter`，并对每个依赖项进行通知。（对每个记过的人：”我变了，告诉你一下，你要重新渲染了“）
+
+为什么说这是 **发布订阅模式** 呢？
+
+这些依赖项（DOM 元素）就像数据的订阅者，一旦数据改变，就会被通知，并进行重新渲染。
+
+但是怎么记录这些依赖项呢？其实是用以下的`Watcher`去记录DOM元素是如何渲染的（**渲染函数**），并不关心真正对应的是哪个DOM元素。因为可以根据渲染函数去重新构建这个DOM元素（Vue中使用虚拟DOM节点）。（怎么在拿到数据的新值以后，重新渲染相应的DOM元素）。
+
+以下的`Dep`更像是个中间人，记录一个数据的所有依赖项（订阅者）。数据变化时，首先被`Observer`通知”数据变化了“，然后通知记录过的每个依赖项”数据变化了“。（然后`Watcher`自己调用自己的渲染函数，决定怎么更新视图）
+
+以下的`Observer`则是一道数据的监视器和拦截器。在此进行数据劫持的相关操作，以便在`getter`触发时通知`Dep`进行【依赖收集】，在`setter`触发时通知`Dep`数据变化。
+
+总结来说，以 发布订阅模式 来说，数据是 subject，视图是 subscriber，有个`Dep`对象充当中间人。
 
 ![](../img/vue/vue2-reactive0.png)
 
@@ -142,7 +212,19 @@ function SelfVue (data, el, exp) {
 }
 ```
 
-v-model：绑定的数据和表单元素值相关联，无论修改谁，另外一个都会同步更新
+
+
+## Vue3 响应式
+
+<a href="https://v3.cn.vuejs.org/guide/reactivity.html">官方链接</a>
+
+Vue3 的响应式原理和 vue2 不同，使用了 ES6的`Proxy`对象代替`Object.defineProperty()`方法。
+
+`Proxy`对象本质上也是对源数据的一层代理，可以拦截对源数据的任何交互。其中也可以设置`getter`和`setter`拦截器。
+
+只不过，`Proxy`对象是对整个源数据的代理，对源数据任何属性的交互都会被代理对象拦截到！这样就不用以前那样遍历源数据的所有属性并对每个属性调用`Object.defineProperty()`了！
+
+响应式的核心思想并没有变，详情参考官方链接。
 
 
 
@@ -194,13 +276,7 @@ Vue.prototype.$bus = new Vue();
 
 ## vue路由管理
 
-vue router分为两个模式：hash和history
-
-### hash模式
-
-利用了window可以监听onhashchange事件。url的hash值（url中会出现`#`，`#`表示网页的一个位置，其后面的字符，就是该位置的标识符）发生变化时，根据这个值渲染绑定这个路由的组件。被称为前端路由，因为路由跳转并不会真的向服务器发送请求。
-
-当然需要通过引入vue-router，创建Router实例，在routes属性中将path和component绑定。
+Vue-router 实例，一个路由引入对应的一个组件。这里用了异步引入的方法。
 
 ```javascript
 export const router = new Router({
@@ -227,11 +303,48 @@ export const router = new Router({
 })
 ```
 
+
+
+vue router 分为两个模式：hash 和 history
+
+### hash模式
+
+利用`window.location.hash`。url的hash值（url中会出现`#`，`#`表示网页的一个位置，其后面的字符，就是该位置的标识符）发生变化时，根据这个值渲染绑定这个路由的组件。被称为前端路由，
+
+- 路由跳转并不会真的向服务器发送请求。因为`#`后面的值不会发送到服务器，所以hash值改变不会触发浏览器发送请求。
+
+  比如说访问`http://www.mywebsite.com/#`。第一次会发送请求到服务器，请求的url为`http://www.mywebsite.com/`（这是不可避免的），通常后端在处理路由`/`会返回`index.html`。
+
+  而在后续跳转到其他路由，只是修改`#`以后的值，因为如果发送请求，请求url依然是`http://www.mywebsite.com/`，所以并不会服务器发送请求。
+
+- 页面跳转是通过修改`window.location.href`的值。
+
+- 页面跳转事件是监听window的`onhashchange`事件，在事件处理函数中渲染路由对应的组件。
+
+
+
 ### history模式
 
-url中没有`#`，刷新页面时会携带完整url向服务器发送请求。此时nginx和后端应该对此url进行重定向和处理，否则会因为找不到资源而报404状态码。
+利用了HTML5中全新升级的 History API，处理浏览器的历史记录。
 
-利用了HTML5的history对象，调用`.pushState()`进行路由前进，调用`.popState()`进行路由后退，而页面是在路由跳转之前单独进行重新渲染，使得看起来是进行了页面跳转。
+- 因为没再使用hash值，所以url没有了`#`。而相对应的，每次改变了路由是真实改变了请求的url，所以都会向服务器请求url。如果服务器没有对该url的处理，那就会报 404 咯。
+  - 当然，可以现在nginx上配置 try_file 属性，让 nginx 在处理url的时候，可以试一试转发到其他路由，比如默认的`/index.html`。从而让服务器处理url有个兜底`index.html`
+- 路由前进调用`history.pushState()`，路由后退调用`history.popState()`。
+- 页面跳转事件是监听window的`onpopstate`事件，在事件处理函数中渲染路由对应的组件。
+
+`pushState()`接收3个参数：stateObject、title 和 url。
+
+- 改变的stateObject 通过 history.state 来访问。
+- `title` 用于跳转后的页面标签页的 title。
+- `url`是要跳转到的 url。
+
+**优势**：
+
+1. history模式能修改到同域名下的url，而不是仅仅修改`#`后的hash值。可以跳转的url更多。比如可以从`http://www.mywebsite.com/list`跳转到`http://www.mywebsite.com/video`。（存疑，因为改变hash值其实也能满足跳转到router实例里规定的所有路由，你还想跳转到哪些url？）
+
+2. `pushState()`设置的新URL可以与当前URL一模一样，这样也会把记录添加到栈中；而hash设置的新值必须与原来不一样才会触发动作将记录添加到栈中；
+3. `pushState()`通过stateObject参数可以添加任意类型的数据到记录中；而hash只可添加短字符串；
+4. `pushState()`可额外设置title属性供后续使用。
 
 
 
@@ -1747,3 +1860,4 @@ export function defineReactive (
 #### 原理图
 
 ![](../img/vue/reactive.png)
+
