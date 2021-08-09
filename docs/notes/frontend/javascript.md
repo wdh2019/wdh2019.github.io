@@ -3888,13 +3888,67 @@ request.onsuccess = (event) => {
 
 ### 对象存储
 
+创建对象存储：
 
+- 如果数据库不存在，`open()`创建一个新数据库，然后触发 `upgradeneeded` 事件；如果数据库存在，而且你指定了一个升级版的版本号，则会立即触发 `upgradeneeded`事件。
+- 在`upgradeneeded`事件处理程序中，创建对象存储。
+
+```javascript
+// 一个user对象
+let user = {
+	username: "007",
+	firstName: "James",
+	lastName: "Bond",
+	password: "foo"
+};
+
+// 创建对象存储
+request.onupgradeneeded = (event) => {
+  const db = event.target.result;
+  
+  // 如果存在则删除当前 objectStore。测试的时候可以这样做
+  // 但这样会在每次执行事件处理程序时删除已有数据
+  if(db.objectStoreNames.contains("user")) {
+    db.deleteObjectStore("users");
+  }
+  db.createObjectStore("users", { keyPath: "username" });
+};
+```
+
+- 注意 `keyPath` 属性的值是存储对象的一个属性名，同时作为键。
 
 ### 事务
 
-调用数据库对象的`transaction()` 方法创建。
+- 创建数据库对象：
 
--  有了事务的引用，可以使用`objectStore()`方法，传入对象存储的名称，以访问特定的对象存储。使用`add()`和`put()`方法添加和更新对象。使用`get()`方法取得对象。使用`delete()`方法删除对象。使用`clear()`方法删除所有对象。
+  不指定参数，则对数据库中所有对象存储**只读**：
+
+```javascript
+let transaction = db.transaction();
+```
+
+​		传入一个字符串或一个字符串数组，指定要访问的对象存储：
+
+```javascript
+// 访问 users 对象存储
+let transaction = db.transaction("users");
+// 访问 users 和 anotherStore 对象存储
+let transaction = db.transaction(["users", "anotherStore"])
+```
+
+​		传入第二个参数，修改访问模式。必须是`readonly`、`readwrite`或`versionchange`：
+
+```javascript
+let transaction = db.transaction("users", "readwrite")
+```
+
+
+
+-  访问特定的对象存储：`objectStore()`方法。
+   -  使用`add()`和`put()`方法添加和更新对象。
+   -  使用`get()`方法取得对象。
+   -  使用`delete()`方法删除对象。
+   -  使用`clear()`方法删除所有对象。
 
 ```javascript
 const transaction = db.transaction("users"),
@@ -3905,6 +3959,59 @@ request.onsuccess = (event) => alert(event.target.result.firstName);
 ```
 
 - 事务的事件处理程序：`onerror`和`oncomplete`。
+
+### 插入对象
+
+`add()`和`put()`，都接收一个参数：要存储的对象。
+
+- 插入已存在的键的对象存储时，`add()`报错，`put()`重写对象。
+
+### 游标查询
+
+`openCursor()`创建游标，并返回一个请求。需要添加`onsuccess`和`onerror`事件处理程序：
+
+```javascript
+ const transaction = db.transaction("users"),
+        store = transaction.objectStore("users"),
+        request = store.openCursor();
+request.onsuccess = (event) => { // 处理成功
+    };
+    request.onerror = (event) => {
+// 处理错误 };
+```
+
+- `onsuccess`事件处理程序中，`event.target.result`保存着 IDBCursor 的实例或 null。有以下几个属性：
+  - direction：字符串常量。表示游标前进方向以及是否应该遍历所有重复的值。可能值：NEXT("next")、NEXTUNIQUE("nextunique")、PREV("prev")、PREVUNIQUE("prevunique")。
+  - key：对象的键。
+  - value：实际的对象。
+  - primaryKey：游标使用的键。
+
+- 游标的`update()`以一个新对象，更新当前游标位置的值，并返回一个请求。需要添加`onsuccess`和`onerror`事件处理程序。
+
+```javascript
+request.onsuccess = (event) => { 
+	const cursor = event.target.result; 
+	let value,
+    	updateRequest;
+	if (cursor) { // 永远要检查 
+		if (cursor.key == "foo") {
+    	value = cursor.value;
+			value.password = "magic!";
+			updateRequest = cursor.update(value); // 请求保存更新后的对象 
+      updateRequest.onsuccess = () => {
+				// 处理成功 
+  		};
+			updateRequest.onerror = () => {
+        // 处理错误
+			}; 
+		}
+	} 
+};
+```
+
+- 游标的`delete()`删除游标位置的记录，并返回一个请求。需要添加`onsuccess`和`onerror`事件处理程序。
+
+
 
 
 

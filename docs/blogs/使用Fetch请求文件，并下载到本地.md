@@ -200,3 +200,278 @@ console.log('Server running at http://127.0.0.1:3000')
 
 
 如有错误，欢迎指正！
+
+
+
+
+
+## 2021/8/9  更新
+
+在后续的debug中，我发现了上述代码实现的几个问题。这几个问题虽然看起来并没有影响代码功能，实际上只是恰好没有掉入这些坑，或者问题没有表现出来。
+
+
+
+### url中的中文
+
+请求的文件url中一旦有中文，就可能会出现意想不到的错误，比如服务端接收到的请求url是**乱码**的。
+
+这里可以用一对对应的函数 `encodeURI()` 和 `decodeURI()`来对中文进行编码和翻译。
+
+- 在前端，用`encodeURI()`对中文进行编码：
+
+```javascript
+let url = "GEELY 6AT 项目驻车换挡熄火问题调查_EAV4_孙柱.docx";
+
+fetch(`http://127.0.0.1:3000/${encodeURI(url)}`,{ // 用encodeURI()编码url中的中文
+	headers:{
+		'content-type':'application/json;charset=utf-8'
+	}
+})
+```
+
+编码出来是这样的结果：
+
+```json
+GEELY%206AT%20%E9%A1%B9%E7%9B%AE%E9%A9%BB%E8%BD%A6%E6%8D%A2%E6%8C%A1%E7%86%84%E7%81%AB%E9%97%AE%E9%A2%98%E8%B0%83%E6%9F%A5_EAV4_%E5%AD%99%E6%9F%B1.docx
+```
+
+- 在后端，以nodejs举例，可以用`decodeURI()`对编码后的url进行翻译：
+
+```javascript
+fs.readFile(decodeURI(pathname).substr(1), function(err,data){ ... })
+```
+
+翻译出来的结果：
+
+```bash
+GEELY 6AT 项目驻车换挡熄火问题调查_EAV4_孙柱.docx
+```
+
+
+
+**注意**：用其他语言可能对应的函数名不同，不一定叫`decodeURI`
+
+
+
+### Fetch 函数的两次请求
+
+Fetch 函数在发送非简单请求时，会先进行一次【预检请求】（请求方法为OPTION），目的是为了验证服务器是否可以处理非简单请求。
+
+预检请求被通过以后，才会再进行【真正的GET/POST等请求】，**真正去服务器请求资源**。
+
+这类似于如下的场景：
+
+浏览器（发送OPTION请求）：我的请求可不简单，服务器你这能处理吗？
+
+服务器（收到OPTION请求）：我能行（返回200）。
+
+浏览器（收到响应码200，再发送GET/POST...请求）：那我这次真的来请求资源啦。
+
+服务器（收到GET/POST...请求）：好的，给你（200）/ 抱歉，我没有（404）。
+
+
+
+至于什么样的请求是【简单请求】，详情自行百度。
+
+在本例中，虽然使用的请求方法 GET 是简单请求方法。但是我们还设置了头部 Content-type，其值为 application/json，这一点使得该请求不再属于【简单请求】。
+
+- 对于【简单请求】，fetch 只会发送一次请求。
+- 对于跨域且【非简单请求】，fetch 才会发送两次请求。
+
+
+
+**后端再处理请求时，务必要注意对两次不同请求的不同处理！**
+
+```javascript
+if(req.method == 'GET'){ // 处理第二次的请求方法为GET的请求
+        fs.readFile(decodeURI(pathname).substr(1), function(err,data){ // decodeURI()将url中用encodeURI()编码过的中文进行翻译
+            if(err){
+                console.log(err)
+                res.writeHead(404,{'Content-type': 'application/json;charset=utf-8'})
+                res.end("error")
+            }
+            else {
+                res.writeHead(200, {'Content-Type': 'application/json;charset=utf-8'})
+                res.end(data);
+            }
+        })
+}
+else{ // 如果是GET以外的请求，返回200。此处是为了 直接通过 第一次的请求方法为OPTION的请求。
+        res.writeHead(200,{'Content-Type': 'text/html;charset=utf-8'})
+        res.end();
+}
+```
+
+
+
+
+
+### 错误处理
+
+如果后端因找不到请求的文件而返回404，之前的代码就可能直接把整个响应作为文件的二进制数据，生成一个文件，从而导致非预期的结果。
+
+（用户：我的文件怎么只有两行内容，一行是"code"，一行是"message":"404 Not Found ..." ？？？）
+
+
+
+因此我们在前端的代码中添加错误处理代码：
+
+```javascript
+fetch(`http://127.0.0.1:3000/${encodeURI(url)}`,{ // 用encodeURI()编码url中的中文
+	headers:{
+		'content-type':'application/json;charset=utf-8'
+	}
+})
+.then(res => { // res为第一次请求方法为OPTION的请求的响应，用于确认服务器是否具有响应功能
+	if(res.ok){
+		return res.blob() // 若第一次请求通过，则再发送GET请求去请求文件
+	}
+	else{ // 错误处理
+		let err = new Error(res.statusText)
+		err.response = res
+		throw err
+	}
+})
+.then(blob => { // 对GET请求的响应数据进行处理，实现用户本地下载文件
+	let url = window.URL.createObjectURL(blob)
+	let a = document.createElement('a')
+	a.download = filename
+	a.href = url
+	a.click()
+	window.URL.revokeObjectURL(url)
+})
+.catch(err=>{ // 错误处理
+	console.log(err);
+})
+```
+
+
+
+另外一小点需要注意的是：
+
+- 使用`res.blob()`会把响应的数据直接转换成二进制数据，所以直接填到生成的文件中（因为数据表示的本质就是二进制，所以响应的数据无论是什么牛鬼蛇神，都能转）
+- 使用`res.json()`，响应的数据会以json格式返回，所以如果不用`JSON.parse()`方法先解析json格式数据，就没办法填到生成的文件中（会报错）。
+
+第二种方法便于调试，因为这样可以检测出之前代码的问题。（响应体可不是json格式的数据，会报错哦）
+
+但为了最少地修改代码（懒），所以修改后的演示代码保持第一种。
+
+
+
+
+
+### 修改后的演示代码
+
+前端 index.html
+
+```javascript
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fetch API test</title>
+</head>
+<body>
+    <button id="btn">点击下载文件</button>
+    <script>
+        document.querySelector('#btn').addEventListener('click',function(){
+            let url = "GEELY 6AT 项目驻车换挡熄火问题调查_EAV4_孙柱.docx";
+            let filename = "file1.docx";
+            Fetch(url, filename)
+        })
+
+        function Fetch(url, filename){
+            
+            console.log(encodeURI(url)); // 用encodeURI()编码url中的中文
+
+            fetch(`http://127.0.0.1:3000/${encodeURI(url)}`,{ // 用encodeURI()编码url中的中文
+                headers:{
+                    'content-type':'application/json;charset=utf-8'
+                }
+            })
+            .then(res => { // res为第一次请求方法为OPTION的请求的响应，用于确认服务器是否具有响应功能
+                if(res.ok){
+                    console.log(res)
+                    return res.blob() // 若第一次请求通过，则再发送GET请求去请求文件
+                }
+                else{ // 错误处理
+                    console.log(res);
+                    let err = new Error(res.statusText)
+                    err.response = res
+                    throw err
+                }
+            })
+            .then(blob => { // 对GET请求的响应数据进行处理，实现用户本地下载文件
+                    let url = window.URL.createObjectURL(blob)
+                    let a = document.createElement('a')
+                    a.download = filename
+                    a.href = url
+                    a.click()
+                    window.URL.revokeObjectURL(url)
+            })
+            .catch(err=>{ // 错误处理
+                console.log(err);
+            })
+        }
+        
+    </script>
+</body>
+</html>
+```
+
+
+
+后端 index.js
+
+```javascript
+const http = require('http')
+const fs = require('fs')
+const url = require('url')
+
+http.createServer(function(req,res){
+    let pathname = url.parse(req.url).pathname;
+    console.log(decodeURI(pathname).substr(1)); // decodeURI()将url中用encodeURI()编码过的中文进行翻译
+    
+    // 为所有响应设置跨域头部
+    res.setHeader("Access-Control-Allow-Headers", "content-type,XXX");
+    res.setHeader("Access-Control-Allow-Methods", "*");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+
+    if(req.method == 'GET'){ // 处理第二次的请求方法为GET的请求
+        fs.readFile(decodeURI(pathname).substr(1), function(err,data){ // decodeURI()将url中用encodeURI()编码过的中文进行翻译
+            if(err){
+                console.log(err)
+                res.writeHead(404,{'Content-type': 'application/json;charset=utf-8'})
+                res.end("error")
+            }
+            else {
+                res.writeHead(200, {'Content-Type': 'application/json;charset=utf-8'})
+                res.end(data);
+            }
+        })
+    }
+    else{ // 如果是GET以外的请求，返回200。此处是为了 直接通过 第一次的请求方法为OPTION的请求。
+        res.writeHead(200,{'Content-Type': 'text/html;charset=utf-8'})
+        res.end();
+    }
+    
+}).listen(3000);
+
+console.log('Server running at http://127.0.0.1:3000')
+```
+
+（**我对每个请求做了统一的跨域头部设置，因为两次请求都是跨域的**）
+
+
+
+#### 前端页面效果
+
+![fetch-new-frontend-page](./img/fetch-new-frontend-page.png)
+
+#### 后端命令行输出
+
+![fetch-new-server-console](./img/fetch-new-server-console.png)
+
