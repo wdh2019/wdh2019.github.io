@@ -31,13 +31,19 @@ module.exports = {
                         'frontend/css.md',
                         ['frontend/javascript.md', '五、Javascript'],
                         'frontend/vue.md',
-                        'frontend/webpack.md'
+                        'frontend/webpack.md',
+                        'frontend/less.md'
                     ]
                 },
                 {
                     title: '设计模式',
                     sidebarDepth: 2,
                     children: ['design-pattern/设计模式.md']
+                },
+                {
+                    title: '数据结构与算法',
+                    sidebarDepth: 2,
+                    children: ['data structure and algorithm/sorting.md']
                 }
             ],
         }
