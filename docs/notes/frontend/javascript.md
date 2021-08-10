@@ -4010,24 +4010,423 @@ request.onsuccess = (event) => {
 ```
 
 - 游标的`delete()`删除游标位置的记录，并返回一个请求。需要添加`onsuccess`和`onerror`事件处理程序。
+- `continue(key)`移动到结果集的下一条记录。参数key可选，指定了则移动到指定的键。
+- `advance(count)`游标向前移动指定的count条记录。
+
+### 键范围
+
+对应 IDBKeyRange 实例。有4种指定键范围的方式：
+
+1. `only()`方法传入想要获取的键：
+
+```javascript
+const onlyRange = IDBKeyRange.only("007");
+```
+
+2. `lowerBound()`定义结果集的下限（游标开始的位置）：
+
+```javascript
+const lowerRange = IDBKeyRange.lowerBound("007");
+```
+
+3. `upperBound()`定义结果集的上限（游标不会越过的记录）：
+
+```javascript
+const upperRange = IDBKeyRange.upperBound("ace");
+```
+
+4. `bound()`同时指定上限和下限：
+
+```javascript
+const boundRange = IDBKeyRange.bound("007","ace");
+```
+
+定义了范围后，传给`openCursor()`方法，得到位于该范围的游标：
+
+```javascript
+const store = db.transaction("users").objectStore("users");
+const range = IDBKeyRange.bound("007","ace");
+const request = store.openCursor(range);
+```
+
+### 设置游标方向
+
+`openCursor()`接收2个参数：IDBKeyRange 实例 和 表示方向的字符串。
+
+- 以下游标会从第一条记录，遍历到最后一条记录。但会跳过重复的记录。
+
+```javascript
+const request = store.openCursor(null, "nextunique");
+```
+
+- 反向移动的游标：
+
+```javascript
+const request = store.openCursor(null, "prevunique");
+```
+
+### 索引
+
+- `createIndex()`在某个对象存储上创建新索引。第一个参数是 索引的名称，第二个参数是 索引属性的名称，第三个参数是包含键 unique 的 options 对象，表示键是否在所有记录中唯一。
+- 返回 IDBIndex 实例。
+
+```javascript
+const index = store.createIndex("username", "username", { unique: true })
+```
+
+- `index()`返回已有索引：
+
+```javascript
+const index = store.index("username");
+```
+
+索引类似于对象存储。
+
+- `openCursor()`在索引上创建新游标，只不过`result.key`属性中保存的是索引键。
+- `openKeyCursor()`在索引上创建特殊游标，只返回每条记录的主键。`event.result.key`是索引键，`event.result.value`是主键，而非整条记录。
+- `get()`通过索引取得单条记录。
+- `getKey()`只取得给定索引键的主键，而非整条记录。
+
+IDBIndex 对象的属性：
+
+- name：索引名。
+- keyPath：调用`createIndex()`时传入的属性路径。
+- objectStore：索引对应的对象存储。
+- unique：索引键是否唯一。
+
+对象存储上的`indexNames`属性，保存着相关索引名。
+
+`deleteIndex()`传入索引名可以删除索引。
+
+### 并发问题
+
+如果两个不同的浏览器标签页同时打开了同一个网页，有可能一个网页尝试升级数据库而另一个尚未就绪。
+
+解决方法：在数据库的`onversionchange`事件处理程序中，立即关闭数据库，已完成版本升级。
+
+### 限制
+
+- 与页面源（协议、域和端口）绑定，信息**不能跨域共享**。
+- 每个源都有存储的空间限制。
+- Firefox 中 本地文件不能访问 IndexDB 数据库。
+
+
+
+## 模块
+
+ES6 新增模块规范。
+
+### 模块模式
+
+目的：将代码拆分成独立的块，再把这些块连接起来。
+
+思想：把逻辑分块、各自封装、相互独立。每个块自行决定对外暴露什么，引入执行那些外部代码。
+
+#### 模块标识符
+
+本质上是键/值对。将模块标识符解析为实际模块的过程要根据模块系统对标识符的实现。
+
+#### 模块依赖
+
+模块系统的核心是<u>管理依赖</u>。指定依赖的模块与周围的环境会达成一种契约。
+
+本地模块向模块系统声明一组外部模块（依赖），这些外部模块对于当前模块正常运行是必需的。
+
+模块系统检视这些依赖，进而保证这些外部模块能够被加载并在本地模块运行时初始化所有依赖。
+
+#### 模块加载
+
+在浏览器中，模块加载涉及以下步骤：
+
+- 发送请求，请求依赖模块的代码，并等待网络返回。
+- 收到模块代码后，浏览器确定刚收到的模块是否也有依赖。
+- 递归地评估并加载所有依赖，直到所有依赖模块都加载完成。
+- 执行入口模块。
+
+#### 入口
+
+代码执行的起点。因为 JavaScript 是顺序执行且单线程的，所有代码必须有执行起点。
+
+模块的相互依赖会形成**依赖图**。
+
+#### 异步依赖
+
+因为 JavaScript 可以异步执行，所以可以按需加载模块。
+
+JavaScript 通知模块系统在必要时加载新模块，并在模块加载完成后提供回调。
+
+#### 动态依赖
+
+不同于在模块开始时列出所有依赖，有些模块系统允许开发者动态添加依赖。这些依赖必须在模块执行前加载完毕。
+
+优点：支持更复杂的依赖关系。
+
+缺点：增加了对模块进行静态分析的难度。
+
+#### 静态分析
+
+分析工具会检查代码结构，在不实际执行代码的情况下推断其行为。
+
+优点：可以让模块打包系统更容易将代码处理为较少的文件。
+
+#### 循环依赖
+
+在包含循环依赖的应用程序中，模块加载顺序可以出人意料。
+
+只要恰当地封装模块，使它们没有副作用，加载顺序就应该不会影响应用程序的运行。
+
+
+
+### CommonJS
+
+同步声明依赖的模块定义。主要用于服务器端实现模块化。不能在浏览器中直接运行。
+
+- `require()`指定依赖，`module.exports`对象定义自己的公开 API 。
+
+```javascript
+var moduleB = require('./moduleB');
+
+module.exports = {
+	stuff: moduleB.doStuff();
+};
+```
+
+#### require()
+
+- 模块是**单例**，无论一个模块在 `require()`中被引用多少次，模块只被加载一次。
+- 模块第一次加载后会被缓存，后续加载会取得缓存的模块。
+- 模块加载是模块系统执行的同步操作。因此可以有条件地加载模块。
+
+#### module.exports
+
+- 可以导出一个字符串
+
+```javascript
+module.exports = 'foo'
+```
+
+- 可以导出一个对象
+
+```javascript
+module.exports = {
+	a: 'A',
+	b: 'B'
+}
+// 等价于
+module.exports.a = 'A';
+module.exports.b = 'B';
+```
+
+- 可以导出一个类/类实例
+
+```javascript
+class A {}
+// 导出类
+module.exports = A;
+
+var A = require('./moduleA');
+var a = new A();
+```
+
+```javascript
+class A {}
+// 导出类实例
+module.exports = new A();
+```
+
+- 支持动态依赖
+
+```javascript
+if(condition){
+	var A = require('./moduleA');
+}
+```
+
+
+
+### ES6 模块
+
+带有`type="module"`属性的`<script>`标签，会告诉浏览器，这些代码应该作为模块执行。
+
+- 所有模块都会像`<script defer>`加载的脚本一样按顺序执行：立即下载模块文件，但会推迟到文档解析完成后执行。
+
+#### 模块加载
+
+异步递归加载模块。
+
+#### 模块导出
+
+`export`关键字。2种导出方式：命名导出 和 默认导出。
+
+##### 命名导出
+
+- 声明一个值为命名导出。导出语句必须在模块顶级（不能嵌套在某个块/语句）。但出现顺序没有限制（甚至可以出现在要导出的值之前）：
+
+```javascript
+// 允许，但不推荐
+export { foo };
+const foo = "foo";
+```
+
+- 行内命名导出：同一行执行变量声明和导出变量。
+
+```javascript
+export const foo = "foo";
+```
+
+- 声明和导出不在同一行：
+
+```javascript
+const foo = 'foo';
+export { foo };
+```
+
+##### 默认导出
+
+使用`default`关键字。**每个模块只能有一个默认导出**。重复导出报SyntaxError。
+
+```javascript
+const foo = 'foo';
+export default foo;
+```
+
+- 会识别作为别名提供的 default 关键字。
+
+```javascript
+const foo = 'foo';
+export { foo as default };
+```
+
+#### 模块导入
+
+使用`import`关键字。使用其他模块导出的值。必须在模块顶级。相对位置不重要。
+
+- 模块标识符可以是模块的相对路径/绝对路径。但必须是字符串，不能是动态计算的结果。
+- 如果不需要模块的特定导出，但仍想加载和执行模块，可以只通过路径加载它：
+
+```javascript
+import './foo.js'
+```
+
+- 导入对模块而言是只读的，相当于`const`声明的变量。
+- 对**命名导出**，导入时可以使用`*`批量获取并赋值给一个别名：
+
+```javascript
+const foo = 'foo', bar = 'bar', baz = 'baz';
+export { foo, bar, baz }
+
+import * as Foo from './foo.js';
+console.log(Foo.foo); // foo
+console.log(Foo.bar); // bar
+console.log(Foo.baz); // baz
+```
+
+- 指名导入时，把标识符放在 `import` 子句。可以为导入的值指定别名。
+
+```javascript
+import { foo, bar, baz as myBaz } from './foo.js'
+```
+
+- 对**默认导出**，导入时可以使用 `default` 关键字并提供别名；也可以指定标识符作为别名。
+
+```javascript
+import { default as foo } from './foo.js';
+// 等效于
+import foo from './foo.js';
+```
+
+#### 工作者模块
+
+Worker 构造函数接收第二个参数，表示传入的是模块文件：
+
+```javascript
+// 第二个参数默认为{ type: 'classic' }
+const scriptWorker = new Worker('scriptWorker.js');
+const moduleWorker = new Worker('moduleWorker.js', { type: 'module' });
+```
+
+#### 向后兼容
+
+`<script>`的`nomodule`属性：
+
+```html
+// 支持模块的浏览器会执行这段脚本
+// 不支持模块的浏览器不会执行这段脚本
+<script type="module" src="module.js"></script>
+
+// 支持模块的浏览器不会执行这段脚本
+// 不支持模块的浏览器会执行这段脚本
+<script nomodule src="script.js"></script>
+```
 
 
 
 
 
-# 模块
+## Web Worker（工作者线程）
 
-模块系统的核心是<u>管理依赖</u>。指定依赖的模块与周围的环境会达成一种契约。本地模块向模块系统声明一组外部模块（依赖），这些外部模块对于当前模块正常运行是必需的。模块系统检视这些依赖，进而保证这些外部模块能够被加载并在本地模块运行时初始化所有依赖。
+### 和线程的联系
+
+- 工作者线程是以实际线程实现的。
+- 工作者线程并行执行。
+- 工作者线程可以共享某些内存。
+
+### 和线程的区别
+
+- 工作者线程不共享全部内存。
+- 工作者线程不一定在同一个进程中。
+- 创建工作者线程的开销更大。（工作者线程有自己独立的事件循环、全局对象、事件处理程序和其他 JavaScript 环境必需的特性。）
+
+### 类型
+
+1. 专用工作者线程：让脚本单独创建一个 JS 线程，执行委托的任务。**只能被创建它的页面使用**。
+2. 共享工作者线程：可以被多个不同的上下文使用，包括不同的页面。任何与创建它的脚本同源的脚本，都可以向它发送/接收消息。
+3. 服务工作者线程：拦截、重定向和修改页面发出的请求，充当网络请求的仲裁者。
 
 
 
+### workerGlobalScope
+
+工作者线程内部没有`window`的概念。全局对象是 WorkerGlobalScope 实例，通过 `self`
+
+关键字暴露。是 window 的子集。
+
+属性：
+
+- navigator：返回与工作者线程关联的 WorkerNavigator。
+- self：返回 WorkerGlobalScope 对象。
+- location：返回与工作者线程关联的 WorkerLocation。
+- performance：返回 Performance 对象。
+- console：返回与工作者线程关联的 Console 对象。
+- caches：返回与工作者线程关联的 CacheStorage 对象。
+- indexedDB：返回 IDBFactory 对象。
+- isSecureContext：返回布尔值，表示工作者线程上下文是否安全。
+- origin：返回 WorkerGlobalScope 的源。
+
+方法：
+
+- atob()
+- btoa()
+- clearInterval()
+- clearTimeout()
+- createImageBitmap()
+- fetch()
+- setInterval()
+- setTimeout()
+
+独有的全局方法：importScripts()
+
+子类：
+
+- 专用工作者线程中：DedicatedWorkerGlobalScope
+- 共享工作者线程中：SharedWorkerGlobalScope
+- 服务工作者线程中：ServiceWorkerGlobalScope
 
 
-# Web Worker（工作者线程）
 
-#### workerGlobalScope
+### 专用工作者线程
 
-
+**后台脚本**
 
 #### 创建工作者线程
 
@@ -4039,15 +4438,15 @@ request.onsuccess = (event) => {
 
 - 因为线程安全限制，工作者线程的脚本文件只能从**与父页面相同的源**加载。
 
-
-
 #### 使用Worker对象
 
-支持以下事件处理程序属性：
+Worker() 构造函数**返回 Worker 对象**。用于工作者线程与父上下文间传输信息。
 
-- onerror：在工作者线程中发生ErrorEvent类型的错误事件时调用该属性的处理程序。
-- onmessage：在工作者线程中发生MessageEvent类型的消息事件时调用该属性的处理程序。
-- onmessageerror：在工作者线程中发生MessageEvent类型的错误事件时调用该属性的处理程序。
+Worker 对象的事件处理程序属性：
+
+- onerror：在工作者线程中发生 ErrorEvent 类型的错误事件时调用该属性的处理程序。
+- onmessage：在工作者线程中发生 MessageEvent 类型的消息事件时调用该属性的处理程序。
+- onmessageerror：在工作者线程中发生 MessageEvent 类型的错误事件时调用该属性的处理程序。
 
 支持以下方法：
 
@@ -4056,29 +4455,19 @@ request.onsuccess = (event) => {
 
 - 只要工作者线程存在，与之关联的Worker对象就不会被当成垃圾收集掉。
 
+#### 专用工作者线程的生命周期
 
+大致分为3个状态：初始化、活动 和 终止。对其他上下文不可见。
+
+初始化时，虽然工作者线程脚本尚未执行，但可以先把消息加入队列。这些消息会等待工作者线程的状态变为 活动，再把消息添加到它的消息队列。
 
 #### 与专用工作者线程通信
 
-- postMessage()
-- 使用MessageChannel
+都是通过**异步**消息。
 
-
-
-#### 工作者线程数据传输
-
-- 结构化克隆算法
-- 可转移对象
-
-
-
-
-
-### 接口请求
-
-暂无
-
-
+1. 使用 postMessage()
+2. 使用 MessageChannel
+3. 使用 BroadcastChannel
 
 
 
@@ -4998,11 +5387,13 @@ function deepClone(target) {
 
 ### 事件循环
 
-同步代码放在运行栈执行。
+<a href="https://zhuanlan.zhihu.com/p/87684858">参考文章</a>
 
-异步代码在计时器时间到了时放进任务队列，但不一定立马执行。
+同步任务放在运行栈执行。
 
-事件循环会持续触发，执行任务队列中的异步代码。
+异步任务在计时器时间到了时放进任务队列，但不一定立马执行。
+
+事件循环会持续触发，将任务队列中的异步任务放进运行栈执行。
 
 
 
@@ -5014,7 +5405,9 @@ function deepClone(target) {
 
 微任务：Promise.then()
 
-#### 执行顺序
+注：**Promise 构造函数中还是同步环境**，只有后续的 then 方法中的代码才是异步任务。
+
+#### 一次事件循环中的执行顺序
 
 同步代码
 
