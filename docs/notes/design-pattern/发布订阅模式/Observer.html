@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        // 中间人类
+        class Observer {
+            constructor(){
+                this.message = {}
+            }
+
+            $on(type, fn){
+                if(!this.message[type]){
+                    this.message[type] = [];
+                }
+                this.message[type].push(fn);
+            }
+
+            $off(type, fn){
+                if(!this.message[type]) return;
+                if(!fn){
+                    this.message[type] = undefined;
+                } else {
+                    this.message[type] = this.message[type].filter(item => item !== fn);
+                }
+            }
+
+            $emit(type){
+                if(!this.message[type]) return;
+                this.message[type].forEach(fn => fn());
+            }
+        }
+
+        // 新建一个中间人
+        const observer = new Observer();
+        // 事件订阅
+        observer.$on('click', functionA);
+        observer.$on('click', functionB);
+        observer.$on('click', functionC);
+
+        observer.$off('click', functionB);
+
+        // 事件触发
+        observer.$emit('click');
+
+
+        function functionA(){
+            console.log('functionA');
+        }
+        function functionB(){
+            console.log('functionB');
+        }
+        function functionC(){
+            console.log('functionC');
+        }
+    </script>
+    
+</body>
+</html>
