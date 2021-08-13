@@ -44,6 +44,10 @@ module.exports = {
                     title: '数据结构与算法',
                     sidebarDepth: 2,
                     children: ['data structure and algorithm/sorting.md']
+                },{
+                    title: '真题',
+                    sidebarDepth: 1,
+                    children: ['problems/interviews.md']
                 }
             ],
         }
