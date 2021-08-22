@@ -285,6 +285,116 @@ SPDY 位于 HTTP 之下，TCP 和 SSL 之上，这样可以轻松兼容老版本
 
 
 
+### HTTP缓存策略
+
+<a href="https://www.cnblogs.com/shangxiaofei/p/6214560.html">参考博客</a>
+
+3个部分：缓存存储策略、缓存过期策略、缓存对比策略
+
+#### 缓存存储策略
+
+Cache-Control：public、private、no-cache、no-store、max-age
+
+指明响应内容是否可以被客户端存储。
+
+Cache-Control字段含义：
+
+- public
+
+  表明响应可以被任何对象（发送请求的客户端、CDN等代理服务器等）缓存。
+
+- private
+
+  表明响应只能被单个用户缓存，不能作为共享缓存（代理服务器不能缓存它）。
+
+- no-cache
+
+  可以在本地进行缓存。但每次发请求时，都要向服务器进行验证。如果服务器允许，才能使用本地缓存。（即：**需要协商缓存**）
+
+- no-store
+
+  不可以在本地进行缓存。禁止缓存客户端请求或服务器响应的内容，每次都需重新请求服务器拿内容。
+
+- max-age
+
+  设置缓存存储的最大周期，若超过该时间，缓存被视为过期。
+
+#### 缓存过期策略
+
+Cache-Control: no-cache、max-age，Expires，Last-Modified
+
+客户端用来确认存储在本地的缓存数据是否已经过期，进而决定是否要向服务端发送请求以获取数据。
+
+注意：
+
+- Cache-Control 中指定的缓存过期策略优先级高于 Expires。
+
+- Cache-Control: no-cache 和 Cache-Control: max-age=0 相当。而 Cache-Control: max-age=xxx 相当于：
+
+  ```javascript
+  Cache-Control: public/private
+  Expires: 当前客户端时间 + maxAge
+  ```
+
+#### 缓存对比策略
+
+ETags，If-Modified-Since，If-None-Match
+
+将缓存在客户端的数据标识发给服务端，服务端通过标识来判断客户端缓存数据是否仍有效，进而决定是否重发数据。
+
+#### 缓存逻辑流程图
+
+<a href="https://www.jianshu.com/p/c78b5de7a889">参考博客</a>
+
+![](../img/internet/http-cache-logic.png)
+
+#### 强缓存 和 协商缓存（对比缓存）
+
+http 根据是否要向服务器发送请求，将缓存规则分为了两类：强缓存 和 协商缓存。
+
+简单来说，浏览器在处理 http 请求时，
+
+- 先看了看本地缓存是否过期，没过期就从缓存中读取——命中强缓存。
+- 缓存过期了，就拿着缓存对比标志去向服务器请求资源——强缓存未命中，走协商缓存。
+
+当 Cache-Control 头部字段的值为 no-cache 时，跳过强缓存，直接走协商缓存。
+
+##### 强缓存
+
+直接从缓存数据库中取出资源，无需发送请求到服务器上。
+
+http中用`Expires`和`Cache-Control`两个头部信息来判断<u>是否命中强缓存</u>。
+
+强缓存的状态码为200，但 chrome 的 network 中，状态码后会多一个注释，内容为以下2种之一：
+
+- from memory cache
+- from disk cache
+
+1. **from memory cache**：缓存资源在<u>内存</u>中。浏览器（或页面标签）关闭后内存中的缓存就会被释放，重新打开页面取不到该缓存。
+2. from disk cache：缓存资源在<u>硬盘</u>中。浏览器（或页面标签）关闭后硬盘中的缓存不会消失，下次进入页面还能从硬盘中获取。
+
+> 如果不想从强缓存中获取资源，可以强制刷新页面：windows电脑可以通过`ctrl + f5`，mac os 可以通过`shift + command + r`。刷新后你可以看到资源不会出现 from disk(or memory) cache了。
+
+##### 协商缓存
+
+需要经过服务器确认是否使用缓存的机制。服务器根据资源是否被更改，决定响应码为200或304。
+
+客户端需要带着**缓存对比标志**，通常有2种：
+
+- Last-Modified / If-Modified-Since
+- Etag / If-None-Match
+
+1. **Last-Modified / If-Modified-Since**：当浏览器第一次访问资源时，服务器会在响应头中包含`Last-Modified`字段，代表该资源<u>最后的修改时间</u>。当浏览器再次请求该资源时，会在请求头中包含`If-Modified-Since`字段，值为上次请求时服务器返回的`Last-Modified`字段的值；服务器根据该值确认资源在这段时间内是否更改过，如果没有，返回304，如果有，返回200和最新的资源。
+2. **Etag / If-None-Match**：机制类似，但`Etag`是通过一个<u>校验码</u>来对比资源是否更改过，而非资源的修改时间。当一个资源修改时，其校验码也会更改。当浏览器请求资源时，服务器会返回`Etag`字段。当浏览器再次请求资源时，会带上`If-None-Match`，值为上次请求时服务器返回的`Etag`字段的值；服务器根据该值，对比校验码，决定返回304或200。
+
+Etag 的优先级比 Last-Modified 高，原因如下：
+
+- 一些文件也许会周期性的更改，但是他的内容并不改变(仅仅改变的修改时间)，这个时候我们并不希望客户端认为这个文件被修改了，而重新GET；
+
+- 某些文件修改非常频繁，比如在秒以下的时间内进行修改，(比方说1s内修改了N次)，If-Modified-Since能检查到的粒度是s级的，这种修改无法判断(或者说UNIX记录MTIME只能精确到秒)；
+
+- 某些服务器不能精确的得到文件的最后修改时间。
+
 
 
 ## DNS原理

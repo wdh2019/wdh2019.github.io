@@ -1503,6 +1503,8 @@ ul {
 
 ### 浏览器前缀
 
+针对旧浏览器做兼容。
+
 | 浏览器内核   | 前缀     | 浏览器                                       |
 | ------------ | -------- | -------------------------------------------- |
 | Gecko 内核   | -moz-    | 火狐                                         |
@@ -1615,21 +1617,171 @@ background-image: radial-gradient(shape size at position, start-color, ..., last
 
 
 
-
-
-
-
-
-
 ### 动画（animation）
 
+- animation-name：动画的名字
+- animation-duration：动画的持续时间
+- animation-timing-function：动画的运动形式
+- animation-delay：动画的延迟时间
+- animation-iteration-count：动画的重复次数，默认值是1，infinite表示无限次
+- animation-direction：规定是否应该轮流反向播放动画
+
+简写
+
+`animation: name duration timing-function delay iteration-count direction;`
+
+默认值
+
+`animation: none 0 ease 0 1 normal;`
+
+#### @keyframes
+
+用于定义对应名字的animation的具体内容。
+
+例子：
+
+```css
+.box2 {
+  width: 100px;
+  height: 100px;
+  background: red;
+  animation: myBox 4s linear 2s infinite;
+}
+
+...
+
+@keyframes myBox {
+  0% {
+    transform: translate(0,0);
+  }
+  25% {
+    transform: translate(200px,0);
+  }
+  50% {
+    transform: translate(200px,200px);
+  }
+  75% {
+    transform: translate(0,200px);
+  }
+  100% {
+    transform: translate(0,0);
+  }
+}
+```
+
+#### animation-fill-mode
+
+规定动画播放之前/之后，动画效果是否可见。
+
+- none（默认值）：在运动结束之后<u>回到初始位置</u>，在延迟的情况下，让0%在延迟后生效。
+
+- backwards：在延迟的情况下，让<u>0%在延迟前生效</u>。
+- forwards：在运动结束之后，<u>停在结束位置</u>。
+- both：backwards 和 forwards的结合。
+
+#### animation-direction
+
+规定是否应该轮流反向播放动画。
+
+- alternate：一次正向（0%~100%），一次反向（100%~0%）
+- reverse：永远是反向，即从100%~0%
+- normal（默认值）：永远是正向，即从0%~100%
+
+#### animation-timing-function
+
+- linear：匀速。
+- ease（默认值）：开始和结束慢，中间快。
+- ease-in：开始慢，结束快。
+- ease-out：开始快，结束慢。
+- ease-in-out：开始和结束慢。
+- cubic-bezier  （http://cubic-bezier.com）
+
+#### animation-play-state
+
+设置对象动画的状态。（可以用于鼠标悬浮时暂停动画）
+
+- running：运动。
+- paused：暂停。
 
 
-### 渐变（transition）
+
+**注意**：
+
+1. 运动结束后，默认情况下会回在起始位置。
+2. @keyframes：from -> 0%，to -> 100%
+3. 至少设置 animation-name 和 animation-duration ，否则没名字或时长为0，动画不会播放。
 
 
 
-### 转换（transform）
+### 过渡（transition）
+
+- transition-property：设置过渡效果的 CSS 属性名称。
+- transition-duration：完成过渡效果需要的时间。
+
+- transition-timing-function：速度效果的速度曲线。（具体值同animation-timing-function）
+- transition-delay：过渡效果的延迟时间。
+
+简写：
+
+`transition: property duration timing-function delay`
+
+例子：
+
+```css
+div {
+	width: 100px;
+	height: 100px;
+	transition: width 2s;
+}
+```
+
+
+
+
+
+### 变形（transform）
+
+- translate：平移
+- scale：缩放
+- rotate：旋转，单位deg
+- skew：斜切，单位deg
+
+#### translate
+
+- translateX()：沿x轴（水平轴）平移，右为正方向。  `translateX(100px)`
+- translateY()：沿y轴（垂直轴）平移，<u>下</u>为正方向。  `translateY(100px)`
+- translate()：上两个方法的合并，接收2个参数，先X后Y。  `translate(100px,100px)`
+
+#### scale
+
+- scaleX()：x轴上缩放。  `scaleX(1.5)`
+- scaleY()：y轴上缩放。  `scaleY(1.5)`
+- scale()：上两个方法的合并，可以接收2个参数，先X后Y。  `scale(1.5)或scale(1.5, 1.5)`
+
+#### rotate
+
+旋转方向遵循右手定则。（右手拇指指向旋转轴正方向，则其余四指蜷曲的方向是旋转正方向）
+
+- rotate()：2d旋转，顺时针。`rotate(45deg, 45deg)`
+
+- rotateX()：以x轴为旋转轴旋转。
+- rotateY()：以y轴为旋转轴旋转。
+- rotateZ()：以z轴为旋转轴旋转。
+- rotate3d()：3d旋转，接收4个参数：x,y,z,angle。前3个参数组合为一个三维向量，作为旋转轴。第4个参数为旋转角度。
+
+#### skew
+
+- skewX()：沿x轴方向倾斜。  `skewX(45deg)`
+- skewY()：沿y轴方向倾斜。
+- skew()：上两个方法的合并，可以接收2个参数，先X后Y。
+
+#### tranform-origin
+
+变形的基准点位置。  `transform-origin:200px 200px`
+
+
+
+**注意**：transform操作只对块元素生效，对行内元素不生效。
 
 
 
