@@ -31,6 +31,7 @@ module.exports = {
                         'frontend/html.md',
                         'frontend/css.md',
                         ['frontend/javascript.md', '五、Javascript'],
+                        'frontend/git.md',
                         'frontend/vue.md',
                         'frontend/webpack.md',
                         'frontend/less.md'
