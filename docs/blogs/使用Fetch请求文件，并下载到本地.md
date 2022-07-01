@@ -1,3 +1,14 @@
+---
+title: 使用Fetch请求文件，并下载到本地
+date: 2022-07-01 14:33:10
+permalink: /pages/blogs/使用Fetch请求文件，并下载到本地/
+categories:
+  - 博客
+tags:
+  - fetch
+  - Fetch
+  - 请求文件
+---
 # 使用Fetch请求文件，并下载到本地
 
 

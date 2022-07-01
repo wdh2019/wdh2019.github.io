@@ -15,9 +15,7 @@ git add -A
 git commit -m 'deploy'
 
 # 部署到 https://USERNAME.github.io
-git push -f git@github.com:wdh2019/wdh2019.github.io.git master:blogs
+git push -f git@github.com:wdh2019/wdh2019.github.io.git master:contents
 
 # 如果发布到 https://USERNAME.github.io/<REPO>  REPO=github上的项目
 # git push -f git@github.com:USERNAME/<REPO>.git master:gh-pages
-
-cd –

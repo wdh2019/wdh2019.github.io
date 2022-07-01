@@ -1,3 +1,14 @@
+---
+title: 面试题
+date: 2022-07-01 14:33:10
+permalink: /pages/notes/interviews
+categories:
+  - 笔记
+  	- 面试题
+tags:
+  - interviews
+  - 面试题
+---
 # 面试题
 
 

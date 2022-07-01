@@ -1,3 +1,12 @@
+---
+title: 笔记更新记录
+date: 2021-07-10
+permalink: /pages/notes/
+categories:
+  - 笔记
+tags:
+  - 笔记更新记录
+---
 # 欢迎来到wdh2019的笔记
 
 ### 2021/7/10

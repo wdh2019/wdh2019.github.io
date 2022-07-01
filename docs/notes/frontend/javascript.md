@@ -1,3 +1,13 @@
+---
+title: javascript
+date: 2022-07-01 14:33:10
+permalink: /pages/notes/javascript
+categories:
+  - 笔记
+  - 前端
+tags:
+  - javascript
+---
 
 
 **参考资料**：JavaScript高级程序设计（第4版）	Matt Frisbie 著	李松峰 译

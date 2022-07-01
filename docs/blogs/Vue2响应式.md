@@ -1,4 +1,14 @@
-# Vue2.x 响应式
+---
+title: Vue2响应式
+date: 2022-07-01 14:33:10
+permalink: /pages/blogs/Vue2响应式
+categories:
+  - 博客
+tags:
+  - Vue2响应式
+  - vue2响应式
+---
+# Vue2响应式
 
 <a href="https://www.bilibili.com/video/BV1d4411v7UX?p=2">视频链接</a>
 

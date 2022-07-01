@@ -1,5 +1,14 @@
 ---
 sidebarDepth: 3
+title: 浏览器
+date: 2022-07-01 14:33:10
+permalink: /pages/notes/browser
+categories: 
+  - 笔记
+  - 前端
+tags: 
+  - 浏览器
+  - browser
 ---
 
 

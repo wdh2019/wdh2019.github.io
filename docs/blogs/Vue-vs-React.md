@@ -1,3 +1,14 @@
+---
+title: Vue vs React
+date: 2022-07-01 14:33:10
+permalink: /pages/blogs/Vue-vs-React
+categories:
+  - 博客
+tags:
+  - vue
+  - react
+  - vue vs react
+---
 # Vue vs React
 
 在面试的时候经常会被问到各种前端框架的对比，尤其是Vue 和 React 的区别，以及它们各自“鼓吹”的特性。所以特意在此收集一些答案。
