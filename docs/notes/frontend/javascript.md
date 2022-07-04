@@ -5274,6 +5274,184 @@ const money = 1000000000;
 
 
 
+## ES13
+
+<a href="https://juejin.cn/post/6968113844086374431">参考链接</a>
+
+### class相关
+
+#### 声明式类字段
+
+以前只能在`constructor`中通过向`this`赋值，实现类字段的声明。
+
+而现在，可以直接在类中声明类字段了。
+
+```javascript
+class Pokemon {
+  name = "Pikachu";
+  attack() {}
+}
+```
+
+#### 私有类字段/私有方法
+
+使用`#`符号表示类的私有变量。如果试图在`class`外部访问私有变量，则会抛出异常。
+
+```javascript
+class Student {
+  #name = "xiaoming";
+  
+  // 实例私有方法 - 只能在此class内部使用
+  #instancePrivateMethod() {
+    console.log("实例私有方法");
+  }
+}
+```
+
+#### 私有属性访问器
+
+`class`内部可以使用`get`和`set`关键字，对某个属性设置存值函数和取值函数，拦截该属性的存取行为。
+
+```javascript
+class Student {
+  #name1 = "name1";
+  #name2 = "name2";
+  
+  // 私有属性访问器，只能在此class内部使用
+  get #privateGet() {
+    return this.#name1;
+  }
+  
+  // 私有属性访问器，只能在此class内部使用
+  set #privateSet(value) {
+    this.#name1 = value;
+  }
+  
+  get publicGet() {
+    return this.#name2;
+  }
+  
+  set publicSet(value) {
+    this.#name2 = value;
+  }
+}
+```
+
+#### 静态类字段
+
+`static`修饰符允许`class`拥有静态字段。静态字段可以用来代替枚举，也可以用于私有字段。
+
+```javascript
+class Student {
+  // 静态私有字段声明 - 只能在此class内部使用
+  static #staticFieldPrivateName = "静态私有字段声明";
+	
+	// 静态共有字段声明
+	static staticFieldPublicName = "静态公有字段声明";
+
+	// 静态公有方法 - ES6已支持
+	static staticPublicMethod() {
+    console.log("静态公有方法");
+  }
+
+	// 静态私有方法 - 只能在此class内部使用
+	static #staticPrivateMethod() {
+    console.log("静态私有方法");
+  }
+}
+```
+
+
+
+### 正则修饰符`d`
+
+如今，ECMAScript的`RegExp`对象可以在调用`exec`方法时提供有关匹配项的信息。此结果是一个`Array`，包含有关匹配的子字符串的信息，以及一些额外的信息：输入的字符串（input string）、匹配项在输入字符串中的索引（index）和任何命名捕获组的子字符串的`groups`对象。
+
+然而，在一些更高级的场景中，这些信息可能还不足够。比如，ECMAScript实现的`TextMate`语言语法高亮显示不仅需要匹配的索引，而且还需要单个捕获组的开始索引和结束索引。
+
+因此，ES规范对`RegExp.prototype.exec()`，`String.prototype.match`等的结果**附加了一个`indices`属性**。
+
+`indices`属性是一个索引数组，包含每个捕获的子字符串的一对开始索引和结果索引。
+
+任何未被匹配的（unmatched）捕获组，其`indices`属性都会返回`undefined`，类似于它们在子字符串的一对开始索引和结束索引。
+
+另外，索引数组本身将具有一个`groups`属性，其中包含每个命名捕获组的开始索引和结束索引。
+
+```javascript
+const re1 = /a+(?<Z>z)?/d;
+
+// indices are relative to start of the input string:
+const s1 = "xaaaz";
+const m1 = re1.exec(s1);
+m1.indices[0][0] === 1;
+m1.indices[0][1] === 5;
+s1.slice(...m1.indices[0]) === "aaaz";
+
+m1.indices[1][0] === 4;
+m1.indices[1][1] === 5;
+s1.slice(...m1.indices[1]) === "z";
+
+m1.indices.groups["Z"][0] === 4;
+m1.indices.groups["Z"][1] === 5;
+s1.slice(...m1.indices.groups["Z"]) === "z";
+
+// capture groups that are not matched return `undefined`:
+const m2 = re1.exec("xaaay");
+m2.indices[1] === undefined;
+m2.indices.groups["Z"] === undefined;
+```
+
+总结：当正则表达式加上修饰符`d`时，结果会多出一个`indices`属性。
+
+
+
+### 顶层 await
+
+允许开发者在异步函数（async functions）之外使用`await`关键词。它起到类似于一个大的异步函数的效果，让导入它的其他模块在开始评估其主体之前等待。
+
+**顶层`await`只在模块的最顶层生效。**
+
+过去的写法：
+
+```javascript
+(async function() {
+  await Promise.resolve(console.log('!'));
+})
+```
+
+现在的写法：
+
+```javascript
+await Promise.resolve(console.log('!'));
+```
+
+##### 用例1 - 动态依赖路径
+
+```javascript
+const strings = await import(`/i18n/${navigator.language}`);
+```
+
+##### 用例2 - 资源初始化
+
+```javascript
+const connection = await dbConnector();
+```
+
+##### 用例3 - 依赖项回退
+
+```javascript
+let jQuery;
+try {
+  jQuery = await import('https://cdn-a.example.com/jQuery');
+} catch {
+  jQuery = await import('https://cdn-b.example.com/jQuery');
+}
+```
+
+
+
+
+
 ## 重点概念
 
 ### this关键字
