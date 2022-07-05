@@ -18,8 +18,8 @@ tags:
 
 - src
 
-  - 没有这个属性，表示包含行内JS代码
-  - 有这个属性，用于指定要加载的外部JS文件
+  - 如果没有这个属性，表示包含行内JS代码
+  - 如果有这个属性，用于指定要加载的外部JS文件
 - type
 
   - 在浏览器中，值始终是"text/javascript"
@@ -71,6 +71,95 @@ tags:
 - language
 
 
+
+
+
+## 文档模式
+
+文档模式，即可以使用`doctype`切换文档模式。
+
+一共有3种文档模式：**混杂模式**（quirks mode）、**准标准模式**（almost standards mode）和**标准模式**（standards mode）。
+
+### 混杂模式
+
+混杂模式在所有浏览器中都以省略文档开头的`doctype`声明作为开关。这种约定并不合理，因为混杂模式在不同浏览器中的差异非常大，不适用黑科技基本上就没有浏览器一致性可言。
+
+### 准标准模式
+
+准标准模式通过**过渡性文档类型**（Transitional）和**框架集文档类型**（Frameset）来触发：
+
+```html
+<!-- HTML 4.01 Transitional -->
+<!DOCTYPE HTML PUBLIC
+"-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/frameset.dtd">
+
+<!-- HTML 4.01 Frameset -->
+<!DOCTYPE HTML PUBLIC
+"-//W3C//DTD HTML 4.01 Frameset//EN"
+"http://www.w3.org/TR/html4/frameset.dtd">
+
+<!-- XHTML 1.0 Transtional -->
+<!DOCTYPE html PUBLIC
+"-//W3C//DTD XHTML 1.0 Transtional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<!-- XHTML 1.0 Frameset -->
+<!DOCTYPE html PUBLIC
+"-//W3C//DTD XHTML 1.0 Frameset//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
+```
+
+### 标准模式
+
+标准模式通过下列几种文档类型声明开启：
+
+```html
+<!-- HTML 4.01 Strict -->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+"http://www.w3.org/TR/html4/strict.dtd">
+
+<!-- XHTML 1.0 Strict -->
+<!DOCTYPE html PUBLIC
+"-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<!-- HTML5 -->
+<!DOCTYPE html>
+```
+
+准标准模式与标准模式非常接近，很少需要区分。
+
+
+
+
+
+## 严格模式
+
+ECMAScript 5 增加了严格模式（strict mode）的概念。
+
+严格模式是一种不同的JavaScript解析和执行模型，ECMAScript 3 的一些不规范写法在这种模式下会被处理，对于不安全的活动将抛出错误。
+
+要**对整个脚本启用严格模式**，需要再脚本开头加上一行：
+
+```javascript
+"use strict";
+```
+
+它是一个预处理指令。任何支持的JavaScript引擎看到它都会切换到严格模式。
+
+
+
+也可以**单独指定一个函数在严格模式下执行**，只要把这个预处理指令放到函数体开头即可：
+
+```javascript
+function doSomething() {
+	"use strict";
+	// 函数体
+}
+```
+
+现代浏览器都支持严格模式。
 
 
 
@@ -2667,26 +2756,457 @@ delete proxy.foo;
 
 ##### ownKeys()
 
+在`Object.keys()`及类似方法中被调用。对应的反射API方法为`Reflect.ownKeys()`。
+
+```javascript
+const myTarget = {};
+
+const proxy = new Proxy(myTarget, {
+  ownKeys(target) {
+    console.log('ownKeys()');
+    return Reflect.ownKeys(...arguments);
+  }
+});
+
+Object.keys(proxy);
+// ownKeys()
+```
+
+1. **返回值**
+
+   `ownKeys()`必须返回包含字符串或符号的可枚举对象。
+
+2. **拦截的操作**
+
+   - Object.getOwnPropertyNames(proxy)
+   - Object.getOwnPropertySymbols(proxy)
+   - Object.keys(proxy)
+   - Reflect.ownKeys(proxy)
+
+3. **捕获器处理程序参数**
+
+   - target: 目标对象。
+
+4. **捕获器不变式**
+
+   返回的可枚举对象必须包含`target`的所有不可配置的自有属性。
+   如果`target`不可扩展，则返回可枚举对象必须准确地包含自有属性键。
+
 ##### getPrototypeOf()
 
-##### setPrototypeoOf()
+`getPrototypeOf()`捕获器会在`Object.getPrototypeOf()`中被调用。对应的反射API方法为`Reflect.getPrototypeOf()`。
+
+```javascript
+const myTarget = {};
+
+const proxy = new Proxy(myTarget, {
+  getPrototypeOf(target) {
+    console.log('getPrototypeOf()');
+    return Reflect.getPrototypeOf(...arguments)
+  }
+});
+
+Object.getPrototypeOf(proxy);
+// getPrototypeOf()
+```
+
+1. **返回值**
+
+   `getPrototypeOf()`必须返回对象或null。
+
+2. **拦截的操作**
+
+   - Object.getPrototypeOf(proxy)
+   - Reflect.getPrototypeOf(proxy)
+   - proxy.__proto__
+   - Object.prototype.isPrototypeOf(proxy)
+   - proxy instanceof Object
+
+3. **捕获器处理程序参数**
+
+   - target：目标对象
+
+4. **捕获器不变式**
+
+   如果`target`不可扩展，则`Object.getPrototypeOf(proxy)`唯一有效的返回值就是`Object.getPrototypeOf(target)`的返回值。
+
+##### setPrototypeOf()
+
+`setPrototypeOf()`捕获器会在`Object.setPrototypeOf()`中被调用。对应的反射API方法为`Reflect.setPrototypeOf`。
+
+```javascript
+const myTarget = {};
+
+const proxy = new Proxy(myTarget, {
+  setPrototypeOf(target, prototype) {
+    console.log('setPrototypeOf()');
+    return Reflect.setPrototypeOf(...arguments)
+  }
+});
+
+Object.setPrototypeOf(proxy, Object);
+// setPrototypeOf()
+```
+
+1. **返回值**
+
+   `setPrototypeOf()`必须返回布尔值，表示原型赋值是否成功。返回非布尔值会被转型为布尔值。
+
+2. **拦截的操作**
+
+   - Object.setPrototypeOf(proxy)
+   - Reflect.setPrototypeOf(proxy)
+
+3. **捕获器处理程序参数**
+
+   - target: 目标对象。
+   - prototype: target的替代原型，如果是顶级原型则为null。
+
+4. **捕获器不变式**
+
+   如果`target`不可扩展，则唯一有效的`prototype`参数就是`Object.getPrototypeOf(target)`的返回值。
 
 
+##### isExtensible()
+
+`isExtensible()`捕获器会在`Object.isExtensible()`中被调用。对应的反射API方法为`Reflect.isExtensible()`。
+
+```javascript
+const myTarget = {};
+
+const proxy = new Proxy(myTarget, {
+  isExtensible(target) {
+    console.log('isExtensible()');
+    return Reflect.isExtensible(...arguments)
+  }
+});
+
+Object.isExtensible(proxy);
+// isExtensible()
+```
+
+1. **返回值**
+
+   `isExtensible()`必须返回布尔值，表示原`target`是否可扩展。返回非布尔值会被转型为布尔值。
+
+2. **拦截的操作**
+
+   - Object.isExtensible(proxy)
+   - Reflect.isExtensible(proxy)
+
+3. **捕获器处理程序参数**
+
+   - target: 目标对象。
+
+4. **捕获器不变式**
+
+   如果`target`可扩展，则处理程序必须返回true。
+   如果`target`不可扩展，则处理程序必须返回false。
+
+##### preventExtensions
+
+`preventExtensions()`捕获器会在`Object.preventExtensions()`中被调用。对应的反射方法为`Reflect.preventExtensions()`。
+
+```javascript
+const myTarget = {};
+
+const proxy = new Proxy(myTarget, {
+  preventExtensions(target) {
+    console.log('preventExtensions()');
+    return Reflect.preventExtensions(...arguments)
+  }
+});
+
+Object.preventExtensions(proxy);
+// preventExtensions()
+```
+
+1. **返回值**
+
+   `preventExtensions()`必须返回布尔值，表示`target`是否已经不可扩展。返回非布尔值会被转型为布尔值。
+
+2. **拦截的操作**
+
+   - Object.preventExtensions(proxy)
+   - Reflect.preventExtensions(proxy)
+
+3. **捕获器处理程序参数**
+
+   - target: 目标对象。
+
+4. **捕获器不变式**
+
+   如果`Object.isExtensible(proxy)`是false，则处理程序必须返回true。
+
+##### apply()
+
+`apply()`捕获器会在调用函数时中被调用。对应的反射API方法为`Reflect.apply()`。
+
+```javascript
+const myTarget = () => {};
+
+const proxy = new Proxy(myTarget, {
+  apply(target, thisArg, ...argumentsList) {
+    console.log('apply()');
+    return Reflect.apply(...arguments)
+  }
+});
+
+proxy();
+// apply()
+```
+
+1. **返回值**
+
+   返回值无限制。
+
+2. **拦截的操作**
+
+   - proxy(...argumentsList)
+   - Function.prototype.apply(thisArg, argumentsList)
+   - Function.prototype.call(thisArg, ...argumentsList)
+   - Reflect.apply(target, thisArgument, argumentsList)
+
+3. **捕获器处理程序参数**
+
+   - target: 目标对象。
+   - thisArg: 调用函数时的this参数。
+   - argumentsList: 调用函数时的参数列表
+
+4. **捕获器不变式**
+
+   `target`必须是一个函数对象。
+
+##### construct()
+
+`construct()`捕获器会在new操作符中被调用。对应的反射API方法为`Reflect.construct()`。
+
+```javascript
+const myTarget = function() {};
+
+const proxy = new Proxy(myTarget, {
+  construct(target, argumentsList, newTarget) {
+    console.log('construct()');
+    return Reflect.construct(...arguments)
+  }
+});
+
+new proxy;
+// construct()
+```
+
+1. **返回值**
+
+   `construct()`必须返回一个对象。
+
+2. **拦截的操作**
+
+   - new proxy(...argumentsList)
+   - Reflect.construct(target, argumentsList, newTarget)
+
+3. **捕获器处理程序参数**
+
+   - target: 目标构造函数。
+   - argumentsList: 传给目标构造函数的参数列表。
+   - argumentsList: 最初被调用的构造函数。
+
+4. **捕获器不变式**
+
+   `target`必须可以用作构造函数。
 
 ## 代理模式
 
+使用代理可以在代码中实现一些有用的编程模式。
+
 #### 跟踪属性访问
+
+通过捕获`get`、`set`和`has`等操作，可以知道对象属性什么是否被访问、被查询。把实现相应捕获器的某个对象代理放到应用中，可以监控这个对象何时在何处被访问过：
+
+```javascript
+const user = {
+  name: 'Jake'
+};
+
+const proxy = new Proxy(user, {
+  get(target, property, receiver) {
+    console.log(`Getting ${property}`);
+
+    return Reflect.get(...arguments);
+  }
+  set(target, property, value, receiver) {
+    console.log(`Setting ${property}=${value}`);
+
+    return Reflect.set(...arguments);
+  }
+});
+
+proxy.name; // Getting name
+proxy.age = 27; // Setting age=27
+```
 
 #### 隐藏属性
 
+代理的内部实现对外部代码是不可见的，因此要隐藏目标对象上的属性也轻而易举。比如：
+```javascript
+const hiddenProperties = ['foo', 'bar'];
+const targetObject = {
+  foo: 1,
+  bar: 2,
+  baz: 3
+};
+const proxy = new Proxy(targetObject, {
+  get(target, property) {
+    if (hiddenProperties.includes(property)) {
+      return undefined;
+    } else {
+      return Reflect.get(...arguments);
+    }
+  },
+  has(target, property) {
+    if (hiddenProperties.includes(property)) {
+      return false;
+    } else {
+      return Reflect.has(...arguments);
+    }
+  }
+});
+
+// get()
+console.log(proxy.foo); // undefined
+console.log(proxy.bar); // undefined
+console.log(proxy.baz); // undefined
+
+// has()
+console.log('foo' in proxy); // false
+console.log('bar' in proxy); // false
+console.log('baz' in proxy); // true
+```
+
 #### 属性验证
+
+因为所有赋值操作都会触发`set()`捕获器，所以可以根据所赋的值决定是允许还是拒绝赋值：
+```javascript
+const target = {
+  onlyNumbersGoHere: 0
+};
+
+const proxy = new Proxy(target, {
+  set(target, property, value) {
+    if (typeof value !== 'number') {
+      return false;
+    } else {
+      return Reflect.set(...arguments);
+    }
+  }
+});
+
+proxy.onlyNumbersGoHere = 1;
+console.log(proxy.onlyNumbersGoHere); // 1
+proxy.onlyNumbersGoHere = '2';
+console.log(proxy.onlyNumbersGoHere); // 1
+```
 
 #### 函数与构造函数参数验证
 
+跟保护和验证对象属性类似，也可对函数和构造函数参数进行审查。比如，可以让函数只接收某种类型的值：
+```javascript
+function median(...nums) {
+  return nums.sort()[Math.floor(nums.length / 2)];
+}
+
+const proxy = new Proxy(median, {
+  apply(target, thisArg, argumentsList) {
+    for (const arg of argumentsList) {
+      if (typeof arg !== 'number') {
+        throw 'Non-number argument provided';
+      }
+    }
+    return Reflect.apply(...arguments);
+  }
+});
+
+console.log(proxy(4, 7, 1)); // 4
+console.log(proxy(4, '7', 1));
+// Error: Non-number argument provided
+```
+类似地，可以要求实例化时必须给构造函数传参：
+```javascript
+class User {
+  constructor(id) {
+    this.id_ = id;
+  }
+}
+
+const proxy = new Proxy(User, {
+  constructor(target, arugumentsList, newTarget) {
+    if (argumentsList[0] === undefined) {
+      throw 'User cannot be instantiated without id';
+    } else {
+      return Reflect.construct(...arguments);
+    }
+  }
+});
+
+new proxy(1);
+
+new proxy();
+// Error: User cannot be instantiated without id
+```
+
 #### 数据绑定与可观察对象
 
+通过代理可以把运行时中原本不相关的部分联系到一起。这样就可以实现各种模式，从而让不同的代码互操作。
+比如，可以将被代理的类绑定到一个全局实例集合，让所有创建的实例都被添加到这个集合中：
+```javascript
+const userList = [];
 
+class User {
+  constructor(name) {
+    this.name_ = name;
+  }
+}
 
+const proxy = new Proxy(User, {
+  construct() {
+    const newUser = Reflect.construct(...arguments);
+    userList.push(newUser);
+    return newUser;
+  }
+});
+
+new proxy('John');
+new proxy('Jacob');
+new proxy('Jingleheimerschmidt');
+
+console.log(userList); // [User(), User(), User()]
+```
+另外，还可以把集合绑定到一个事件分派程序，每次插入新实例时都会发送消息：
+```javascript
+const userList = [];
+
+function emit(newValue) {
+  console.log(newValue);
+}
+
+const proxy = new Proxy(userList, {
+  set(target, property, value, receiver) {
+    const result = Reflect.set(...arguments);
+    if (result) {
+      emit(Reflect.get(target, property, receiver));
+    }
+    return result;
+  }
+});
+
+proxy.push('John');
+// John
+proxy.push('Jacob');
+// Jacob
+```
+
+总结：从宏观上看，代理是真实JavaScript对象的透明抽象层。代理可以定义包含**捕获器**的处理程序对象，而这些捕获器可以拦截绝大部分JavaScript的基本操作和方法。在这个捕获器处理程序中，可以修改任何基本操作的行为，当然前提是遵从**捕获器不变式**。
+
+与代理如影随形的反射API（Reflect）,则封装了一整套与捕获器拦截的操作相对应的方法。可以把反射API看作一套基本操作，这些操作是绝大部分JavaScript对象API的基础。
 
 
 ## Promise（期约）
@@ -2746,7 +3266,7 @@ Promise.allSettled(iterable)
 
 - 为promise添加处理程序，接收两个可选参数：onResolved和onRejected，分别在promise进入兑现和拒绝状态时执行。`Promise.prototype.then(onResolved, onRejected)`
 
-```
+```javascript
 function onResolved(id) {
 	setTimeout(console.log, 0, id, 'resolved');
 }
